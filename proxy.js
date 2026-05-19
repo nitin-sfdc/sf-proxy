@@ -15,10 +15,23 @@ app.use((req, res, next) => {
 app.all('/proxy/*', async (req, res) => {
   const instanceUrl = req.headers['sf-instance-url'];
   const sfPath = req.params[0];
+
+  console.log('Instance URL received:', instanceUrl);
+  console.log('SF Path:', sfPath);
+
+  if (!instanceUrl) {
+    return res.status(400).json({ error: 'SF-Instance-Url header is missing' });
+  }
+
+  if (!instanceUrl.startsWith('http')) {
+    return res.status(400).json({ error: 'SF-Instance-Url must start with https://' });
+  }
+
   const sfUrl = `${instanceUrl}/services/apexrest/${sfPath}`;
+  console.log('Calling Salesforce URL:', sfUrl);
 
   try {
-    const response = await fetch(sfUrl, {
+    const sfRes = await fetch(sfUrl, {
       method: req.method,
       headers: {
         'Authorization': req.headers['authorization'],
@@ -28,9 +41,11 @@ app.all('/proxy/*', async (req, res) => {
         ? undefined
         : JSON.stringify(req.body)
     });
-    const data = await response.text();
-    res.status(response.status).send(data);
+
+    const data = await sfRes.text();
+    res.status(sfRes.status).send(data);
   } catch (err) {
+    console.error('Fetch error:', err.message);
     res.status(500).json({ error: err.message });
   }
 });
