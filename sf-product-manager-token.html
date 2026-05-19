@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Salesforce Headless Product Manager</title>
+  <link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <style>
+    *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --bg:         #f4f3ef;
+      --surface:    #ffffff;
+      --border:     #e2e0d8;
+      --text:       #1a1a18;
+      --muted:      #6b6b65;
+      --accent:     #0057ff;
+      --success:    #0a7c4e;
+      --success-bg: #e6f4ee;
+      --danger:     #c0392b;
+      --danger-bg:  #fdf0ee;
+      --warning:    #92580a;
+      --warning-bg: #fef6e4;
+      --info-bg:    #eef3ff;
+      --info:       #0044cc;
+      --radius:     10px;
+      --mono:       'DM Mono', monospace;
+      --sans:       'DM Sans', sans-serif;
+    }
+
+    body {
+      font-family: var(--sans);
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 680px; margin: 0 auto; }
+
+    header { margin-bottom: 2rem; }
+    header h1 { font-size: 22px; font-weight: 500; letter-spacing: -0.3px; }
+    header p  { font-size: 13px; color: var(--muted); margin-top: 4px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 1.25rem;
+      margin-bottom: 1rem;
+    }
+
+    label {
+      display: block;
+      font-size: 12px;
+      color: var(--muted);
+      margin-bottom: 4px;
+      font-weight: 500;
+    }
+
+    input[type="text"],
+    input[type="password"] {
+      width: 100%;
+      padding: 9px 12px;
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      font-family: var(--sans);
+      font-size: 14px;
+      color: var(--text);
+      background: var(--bg);
+      outline: none;
+      transition: border-color 0.15s;
+    }
+
+    input:focus { border-color: var(--accent); background: #fff; }
+
+    .field  { margin-bottom: 12px; }
+    .grid2  { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+    button {
+      font-family: var(--sans);
+      font-size: 14px;
+      font-weight: 500;
+      padding: 9px 18px;
+      border-radius: 7px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--text);
+      cursor: pointer;
+      transition: background 0.12s, transform 0.08s;
+    }
+
+    button:hover  { background: var(--bg); }
+    button:active { transform: scale(0.98); }
+    button.primary { background: var(--accent); color: #fff; border-color: var(--accent); }
+    button.primary:hover { background: #0044cc; }
+    button.danger  { background: var(--danger-bg); color: var(--danger); border-color: #f0c4be; }
+    button.full    { width: 100%; }
+
+    .tabs { display: grid; grid-template-columns: repeat(4,1fr); gap: 8px; margin-bottom: 1rem; }
+    .tabs button { font-size: 13px; padding: 8px; text-align: center; }
+    .tabs button.active { background: var(--accent); color: #fff; border-color: var(--accent); }
+
+    .panel { display: none; }
+    .panel.active { display: block; }
+
+    .badge {
+      display: inline-block;
+      font-size: 11px;
+      font-weight: 500;
+      padding: 2px 10px;
+      border-radius: 20px;
+      font-family: var(--mono);
+    }
+    .badge.success { background: var(--success-bg); color: var(--success); }
+    .badge.danger  { background: var(--danger-bg);  color: var(--danger); }
+    .badge.muted   { background: var(--border);      color: var(--muted); }
+
+    .alert {
+      padding: 10px 14px;
+      border-radius: 7px;
+      font-size: 13px;
+      margin-bottom: 12px;
+    }
+    .alert.warning { background: var(--warning-bg); color: var(--warning); }
+    .alert.info    { background: var(--info-bg);    color: var(--info); border: 1px solid #c5d8ff; }
+
+    #status-bar {
+      display: none;
+      align-items: center;
+      gap: 10px;
+      padding: 10px 14px;
+      border-radius: 7px;
+      background: var(--success-bg);
+      color: var(--success);
+      font-size: 13px;
+      font-weight: 500;
+      margin-bottom: 1rem;
+      border: 1px solid #b0dfc7;
+    }
+    #status-bar .sub {
+      font-size: 12px;
+      font-family: var(--mono);
+      font-weight: 400;
+      opacity: 0.8;
+    }
+    #status-bar button {
+      margin-left: auto;
+      font-size: 12px;
+      padding: 3px 12px;
+      color: var(--danger);
+      border-color: #f0c4be;
+      background: var(--danger-bg);
+    }
+
+    .endpoint-tag {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--muted);
+      background: var(--bg);
+      padding: 4px 10px;
+      border-radius: 5px;
+      border: 1px solid var(--border);
+      display: inline-block;
+      margin-bottom: 14px;
+    }
+
+    #response-section { display: none; margin-top: 1rem; }
+
+    .response-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+    .response-header span { font-size: 13px; font-weight: 500; color: var(--muted); }
+
+    pre {
+      font-family: var(--mono);
+      font-size: 12px;
+      color: var(--text);
+      background: var(--bg);
+      border: 1px solid var(--border);
+      border-radius: 7px;
+      padding: 14px;
+      white-space: pre-wrap;
+      word-break: break-all;
+      max-height: 320px;
+      overflow-y: auto;
+      line-height: 1.6;
+    }
+
+    /* Log Console */
+    .log-header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      margin-top: 1rem;
+      margin-bottom: 6px;
+    }
+    .log-header span   { font-size: 13px; font-weight: 500; color: var(--muted); }
+    .log-header button { font-size: 12px; padding: 3px 10px; }
+
+    #log-panel {
+      background: #1a1a18;
+      border-radius: var(--radius);
+      padding: 14px;
+      max-height: 200px;
+      overflow-y: auto;
+      display: none;
+    }
+
+    .log-line       { font-family: var(--mono); font-size: 11px; line-height: 1.8; color: #a8e6a3; }
+    .log-line.req   { color: #7dd3fc; }
+    .log-line.res   { color: #a8e6a3; }
+    .log-line.err   { color: #f87171; }
+    .log-line.info  { color: #fcd34d; }
+    .log-line.div   { color: #333333; }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <header>
+    <h1>Salesforce Headless Product Manager</h1>
+    <p>Paste your token and instance URL — calls Salesforce directly, no proxy.</p>
+  </header>
+
+  <!-- Auth Card -->
+  <div class="card" id="auth-card">
+    <div class="alert info" style="margin-bottom:14px; font-size:12px;">
+      &#9432; Get both values from <strong>Workbench → Info</strong> after login.
+    </div>
+    <div class="field">
+      <label>Instance URL</label>
+      <input id="instanceUrl" type="text" placeholder="https://orgfarm-e9fee8a527-dev-ed.develop.my.salesforce.com" />
+    </div>
+    <div class="field">
+      <label>Access Token (Session ID)</label>
+      <input id="accessToken" type="password" placeholder="00Dxx0000000001!ARgAQ..." />
+    </div>
+    <button class="primary full" onclick="connectOrg()">Connect to Salesforce</button>
+  </div>
+
+  <!-- Status Bar -->
+  <div id="status-bar">
+    <span>&#10003; Connected</span>
+    <span class="sub" id="status-url"></span>
+    <button onclick="disconnect()">Disconnect</button>
+  </div>
+
+  <!-- Main -->
+  <div id="main-section" style="display:none;">
+
+    <div class="tabs">
+      <button id="tab-get"        onclick="setTab('get')">Get</button>
+      <button id="tab-create"     onclick="setTab('create')">Create</button>
+      <button id="tab-update"     onclick="setTab('update')">Update</button>
+      <button id="tab-deactivate" onclick="setTab('deactivate')">Deactivate</button>
+    </div>
+
+    <!-- GET -->
+    <div class="card panel" id="panel-get">
+      <div class="endpoint-tag">GET /services/apexrest/headless/products/</div>
+      <button class="primary full" onclick="getProducts()">Fetch All Products</button>
+    </div>
+
+    <!-- CREATE -->
+    <div class="card panel" id="panel-create">
+      <div class="endpoint-tag">POST /services/apexrest/headless/products/</div>
+      <div class="grid2">
+        <div class="field"><label>Product Name *</label><input id="c-name" type="text" placeholder="Cloud Storage Pro" /></div>
+        <div class="field"><label>Product Code *</label><input id="c-code" type="text" placeholder="CS-001" /></div>
+      </div>
+      <div class="grid2">
+        <div class="field"><label>Description</label><input id="c-desc" type="text" placeholder="Annual plan" /></div>
+        <div class="field"><label>Family</label><input id="c-family" type="text" placeholder="Software" /></div>
+      </div>
+      <button class="primary full" onclick="createProduct()">Create Product</button>
+    </div>
+
+    <!-- UPDATE -->
+    <div class="card panel" id="panel-update">
+      <div class="endpoint-tag">PATCH /services/apexrest/headless/products/{id}</div>
+      <div class="field"><label>Product ID *</label><input id="u-id" type="text" placeholder="01txx0000000ABC" /></div>
+      <div class="grid2">
+        <div class="field"><label>New Name (blank to skip)</label><input id="u-name" type="text" placeholder="Storage Pro" /></div>
+        <div class="field"><label>New Code (blank to skip)</label><input id="u-code" type="text" placeholder="SP-002" /></div>
+      </div>
+      <div class="field"><label>New Description (blank to skip)</label><input id="u-desc" type="text" placeholder="Updated description" /></div>
+      <button class="primary full" onclick="updateProduct()">Update Product</button>
+    </div>
+
+    <!-- DEACTIVATE -->
+    <div class="card panel" id="panel-deactivate">
+      <div class="endpoint-tag">DELETE /services/apexrest/headless/products/{id}</div>
+      <div class="alert warning">&#9888; This sets IsActive = false on the product record.</div>
+      <div class="field"><label>Product ID *</label><input id="d-id" type="text" placeholder="01txx0000000ABC" /></div>
+      <button class="danger full" onclick="deactivateProduct()">Deactivate Product</button>
+    </div>
+
+    <!-- Response -->
+    <div id="response-section">
+      <div class="card">
+        <div class="response-header">
+          <span>API Response</span>
+          <span id="resp-badge"></span>
+        </div>
+        <pre id="response-body"></pre>
+      </div>
+    </div>
+
+    <!-- Log -->
+    <div class="log-header">
+      <span>&#128196; Request Log</span>
+      <button onclick="clearLog()">Clear</button>
+    </div>
+    <div id="log-panel"></div>
+
+  </div>
+</div>
+
+<script>
+  var SF = { instanceUrl: '', accessToken: '' };
+
+  // ── Logging ───────────────────────────────────────────────
+  function log(type, msg) {
+    var panel = document.getElementById('log-panel');
+    panel.style.display = 'block';
+    var line = document.createElement('div');
+    line.className = 'log-line ' + type;
+    line.textContent = '[' + new Date().toLocaleTimeString() + '] ' + msg;
+    panel.appendChild(line);
+    panel.scrollTop = panel.scrollHeight;
+  }
+
+  function logDiv() {
+    var panel = document.getElementById('log-panel');
+    panel.style.display = 'block';
+    var line = document.createElement('div');
+    line.className = 'log-line div';
+    line.textContent = '─────────────────────────────────────────';
+    panel.appendChild(line);
+  }
+
+  function clearLog() {
+    var p = document.getElementById('log-panel');
+    p.innerHTML = '';
+    p.style.display = 'none';
+  }
+
+  // ── Connect ───────────────────────────────────────────────
+  function connectOrg() {
+    var url   = document.getElementById('instanceUrl').value.trim().replace(/\/$/, '');
+    var token = document.getElementById('accessToken').value.trim();
+    if (!url || !token) { alert('Please enter both Instance URL and Access Token.'); return; }
+    SF.instanceUrl = url;
+    SF.accessToken = token;
+    document.getElementById('auth-card').style.display    = 'none';
+    document.getElementById('status-bar').style.display   = 'flex';
+    document.getElementById('main-section').style.display = 'block';
+    document.getElementById('status-url').textContent     = url.replace('https://', '');
+    setTab('get');
+    log('info', 'Connected to: ' + url.replace('https://',''));
+    log('info', 'Token: ' + token.substring(0,20) + '...');
+  }
+
+  function disconnect() {
+    SF = { instanceUrl: '', accessToken: '' };
+    document.getElementById('auth-card').style.display        = 'block';
+    document.getElementById('status-bar').style.display       = 'none';
+    document.getElementById('main-section').style.display     = 'none';
+    document.getElementById('response-section').style.display = 'none';
+    document.getElementById('accessToken').value = '';
+    clearLog();
+  }
+
+  // ── UI ────────────────────────────────────────────────────
+  function setTab(tab) {
+    ['get','create','update','deactivate'].forEach(function(t) {
+      document.getElementById('panel-' + t).classList.toggle('active', t === tab);
+      document.getElementById('tab-' + t).classList.toggle('active', t === tab);
+    });
+  }
+
+  function showResp(type, data) {
+    var badge = document.getElementById('resp-badge');
+    document.getElementById('response-section').style.display = 'block';
+    badge.className   = 'badge ' + (type === 'success' ? 'success' : 'danger');
+    badge.textContent = type === 'success' ? '200 OK' : 'Error';
+    document.getElementById('response-body').textContent =
+      typeof data === 'string' ? data : JSON.stringify(data, null, 2);
+  }
+
+  function showLoading() {
+    document.getElementById('response-section').style.display = 'block';
+    var badge = document.getElementById('resp-badge');
+    badge.className   = 'badge muted';
+    badge.textContent = 'calling...';
+    document.getElementById('response-body').textContent = 'Calling Salesforce directly...';
+  }
+
+  // ── API — Direct to Salesforce (no proxy) ─────────────────
+  async function callAPI(method, path, body) {
+    showLoading();
+
+    var url  = SF.instanceUrl + '/services/apexrest/headless/products/' + (path || '');
+    var opts = {
+      method:  method,
+      headers: {
+        'Authorization': 'Bearer ' + SF.accessToken,
+        'Content-Type':  'application/json'
+      }
+    };
+    if (body) opts.body = JSON.stringify(body);
+
+    logDiv();
+    log('req', method + ' → ' + url);
+    log('req', 'Authorization: Bearer ' + SF.accessToken.substring(0, 20) + '...');
+    if (body) log('req', 'Body: ' + JSON.stringify(body));
+
+    try {
+      var res    = await fetch(url, opts);
+      var status = res.status;
+      var text   = await res.text();
+      var parsed;
+      try { parsed = JSON.parse(text); } catch(e) { parsed = text; }
+
+      log('res', 'Status: ' + status);
+      log('res', 'Body: ' + text.substring(0, 200));
+
+      if (status >= 200 && status < 300) {
+        showResp('success', parsed);
+      } else {
+        showResp('error', '[HTTP ' + status + ']\n\n' +
+          (typeof parsed === 'string' ? parsed : JSON.stringify(parsed, null, 2)));
+      }
+    } catch (e) {
+      log('err', 'Error: ' + e.message);
+      showResp('error',
+        'CORS Error: ' + e.message +
+        '\n\nFix:\n' +
+        '  Setup → CORS → New → add: file://\n' +
+        '  Setup → Trusted URLs → New → add: file://'
+      );
+    }
+  }
+
+  function getProducts() { callAPI('GET', ''); }
+
+  function createProduct() {
+    var name = document.getElementById('c-name').value.trim();
+    var code = document.getElementById('c-code').value.trim();
+    if (!name || !code) { showResp('error', 'Product Name and Code are required.'); return; }
+    callAPI('POST', '', {
+      productName: name,
+      productCode: code,
+      description: document.getElementById('c-desc').value.trim() || null,
+      family:      document.getElementById('c-family').value.trim() || null
+    });
+  }
+
+  function updateProduct() {
+    var id = document.getElementById('u-id').value.trim();
+    if (!id) { showResp('error', 'Product ID is required.'); return; }
+    var body = {};
+    var n = document.getElementById('u-name').value.trim();
+    var c = document.getElementById('u-code').value.trim();
+    var d = document.getElementById('u-desc').value.trim();
+    if (n) body.productName = n;
+    if (c) body.productCode = c;
+    if (d) body.description = d;
+    if (!Object.keys(body).length) { showResp('error', 'Fill at least one field to update.'); return; }
+    callAPI('PATCH', id, body);
+  }
+
+  function deactivateProduct() {
+    var id = document.getElementById('d-id').value.trim();
+    if (!id) { showResp('error', 'Product ID is required.'); return; }
+    callAPI('DELETE', id);
+  }
+</script>
+</body>
+</html>
